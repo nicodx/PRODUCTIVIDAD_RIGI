@@ -1,0 +1,785 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PRG 01 · PTF RIGI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;700&display=swap">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    svg: { fontCache: 'global' },
+    options: { enableMenu: false }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" defer></script>
+<style>
+/* Layout: 12-column Swiss grid on an 8pt base, visible column guides, orange signal bars as section headers, technical crosshairs at module corners. Single deliberate light look (printed spec sheet). */
+:root{
+  --white:#FFFFFF;
+  --ink:#111111;
+  --signal:#FF5A1F;
+  --grid:#EAEAEA;
+  --sans:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --u:8px;
+  --maxw:1280px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--white);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--ink)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+/* ---------- wrapper + column guides ---------- */
+.wrap{max-width:var(--maxw);margin:0 auto;position:relative;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.guides{position:absolute;inset:0;pointer-events:none;z-index:0;
+  margin:0 auto;max-width:var(--maxw);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.guides i{display:grid;grid-template-columns:repeat(12,1fr);height:100%;column-gap:calc(var(--u)*3)}
+.guides i b{border-left:1px solid var(--grid);border-right:1px solid var(--grid)}
+.page{position:relative}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:calc(var(--u)*3);row-gap:calc(var(--u)*3);position:relative;z-index:1}
+.g12>*{min-width:0}
+
+/* ---------- top nav ---------- */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--ink);color:var(--white)}
+.nav .wrap{display:flex;align-items:stretch;gap:calc(var(--u)*3);height:56px}
+.nav .id{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;display:flex;align-items:center;gap:var(--u);white-space:nowrap}
+.nav .id span{background:var(--signal);color:var(--ink);padding:2px 6px}
+.nav ol{list-style:none;margin:0;padding:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.nav ol::-webkit-scrollbar{display:none}
+.nav li a{display:flex;align-items:center;height:100%;padding:0 12px;text-decoration:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;border-bottom:3px solid transparent}
+.nav li a b{color:var(--signal);margin-right:6px;font-weight:700}
+.nav li a:hover,.nav li a.on{border-bottom-color:var(--signal)}
+
+/* ---------- signal bars ---------- */
+.bar{display:grid;grid-template-columns:minmax(64px,1fr) minmax(0,10fr) minmax(64px,1fr);column-gap:calc(var(--u)*3);align-items:center;position:relative;z-index:1}
+.bar .lab{font-family:var(--sans);font-weight:800;font-size:13px;letter-spacing:.02em;text-transform:uppercase}
+.bar .lab.r{text-align:right}
+.bar .band{background:var(--signal);color:var(--ink);font-weight:800;letter-spacing:-.025em;line-height:1.05;padding:calc(var(--u)*2) calc(var(--u)*3);font-size:clamp(18px,3.2vw,40px);text-wrap:balance}
+
+/* ---------- crosshair rows ---------- */
+.cross{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:calc(var(--u)*3);height:32px;position:relative;z-index:1}
+.cross span{position:relative}
+.cross span::before,.cross span::after{content:"";position:absolute;background:var(--ink)}
+.cross span::before{width:22px;height:2px;left:-11px;top:15px}
+.cross span::after{width:2px;height:22px;left:-1px;top:5px}
+.cross .c1{grid-column:1}.cross .c7{grid-column:7}.cross .c13{grid-column:12;justify-self:end}
+.cross .c13::before{left:auto;right:-11px}.cross .c13::after{left:auto;right:-1px}
+
+/* ---------- type scale ---------- */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.meta{font-weight:700;font-size:15px;line-height:1.25;letter-spacing:-.01em}
+.mega{font-weight:900;letter-spacing:-.04em;line-height:.9;font-size:clamp(44px,16cqi,190px);margin:0}
+.h2{font-weight:900;letter-spacing:-.035em;line-height:.95;font-size:clamp(34px,6vw,84px);margin:0;text-wrap:balance}
+.h3{font-weight:800;letter-spacing:-.03em;line-height:1.05;font-size:clamp(22px,2.4vw,30px);margin:0;text-wrap:balance}
+.body{font-size:15px;line-height:1.55;max-width:65ch;margin:0}
+.body+.body{margin-top:calc(var(--u)*2)}
+.small{font-size:13px;line-height:1.5}
+.num{font-variant-numeric:tabular-nums}
+strong{font-weight:800}
+
+/* ---------- hero ---------- */
+.hero{padding-block:calc(var(--u)*4) 0}
+.hero .row{padding-block:calc(var(--u)*3)}
+.spread{display:flex;justify-content:space-between;gap:var(--u);flex-wrap:wrap}
+.spread .meta{font-size:clamp(15px,1.8vw,24px);font-weight:800;text-transform:uppercase;letter-spacing:-.02em}
+.frame{position:relative;padding:calc(var(--u)*7) calc(var(--u)*4);margin-block:calc(var(--u)*2);container-type:inline-size}
+.frame i{position:absolute;width:15%;height:30%;border:0 solid var(--signal)}
+.frame i.tl{top:0;left:0;border-top-width:2px;border-left-width:2px}
+.frame i.tr{top:0;right:0;border-top-width:2px;border-right-width:2px}
+.frame i.bl{bottom:0;left:0;border-bottom-width:2px;border-left-width:2px}
+.frame i.br{bottom:0;right:0;border-bottom-width:2px;border-right-width:2px}
+.frame i::before{content:"";position:absolute;background:var(--signal)}
+.frame i.tl::before,.frame i.tr::before{top:-5px;width:40px;height:8px;left:30%}
+.frame i.bl::before,.frame i.br::before{bottom:-5px;width:40px;height:8px;left:30%}
+.frame .mega span{display:inline-block}
+.mega .gap{margin-left:.35em}
+.tag{display:inline-block;background:var(--ink);color:var(--white);font-size:12px;font-weight:600;padding:8px 12px;letter-spacing:-.01em}
+.tag.o{background:var(--signal);color:var(--ink)}
+.r1{font-weight:900;font-size:clamp(26px,12cqi,48px);letter-spacing:-.03em;line-height:1;white-space:nowrap}
+
+/* ---------- sections ---------- */
+section{position:relative;padding-block:calc(var(--u)*10) calc(var(--u)*4)}
+.shead{border-top:2px solid var(--ink);padding-top:calc(var(--u)*2);margin-bottom:calc(var(--u)*6)}
+.code{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em}
+.code.o{color:var(--ink);background:var(--signal);padding:2px 6px}
+.callout{border:2px solid var(--ink);padding:calc(var(--u)*3);position:relative;background:var(--white)}
+.callout::before{content:attr(data-k);position:absolute;top:-11px;left:16px;background:var(--white);padding:0 8px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em}
+.callout.ink{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.callout.ink::before{background:var(--signal);color:var(--ink)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+
+/* formula blocks */
+.eq{border-left:8px solid var(--signal);padding:calc(var(--u)*3) calc(var(--u)*3);background:var(--white);position:relative;overflow-x:auto}
+.eq .eqk{position:absolute;top:8px;right:12px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em}
+.eq mjx-container{font-size:135%!important;margin:0!important}
+.eq.big mjx-container{font-size:190%!important}
+.eq .tex-fallback{font-family:var(--mono);font-size:18px}
+.eq p{margin:var(--u) 0 0;font-size:13px;line-height:1.5;max-width:60ch}
+
+/* definition list */
+.defs{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--u)*1.5) calc(var(--u)*3);margin:0}
+.defs dt{font-family:var(--mono);font-weight:700;font-size:14px}
+.defs dd{margin:0;font-size:14px;line-height:1.45}
+
+/* numbered list (real sequence/rationale ids) */
+.list{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.list li{display:grid;grid-template-columns:64px 1fr;gap:calc(var(--u)*2);padding-block:calc(var(--u)*2.5);border-top:1px solid var(--ink)}
+.list li:last-child{border-bottom:1px solid var(--ink)}
+.list .k{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.06em;padding-top:4px}
+.list h4{margin:0 0 4px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.list p{margin:0;font-size:14px;line-height:1.5;max-width:68ch}
+
+/* tables */
+.tbl{overflow-x:auto;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:12px 12px;border-bottom:1px solid var(--grid);font-size:14px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid var(--ink)}
+tbody tr:last-child td{border-bottom:0}
+tr.hl td{background:var(--signal);font-weight:800}
+tr.ref td{font-weight:500}
+td b{font-weight:800}
+
+/* bars */
+.meter{display:grid;gap:calc(var(--u)*2)}
+.meter .m{display:grid;grid-template-columns:150px 1fr 110px;gap:calc(var(--u)*2);align-items:center}
+.meter .m .n{font-weight:700;font-size:14px}
+.meter .m .v{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right}
+.meter .track{height:24px;background:var(--grid);position:relative}
+.meter .fill{height:100%;background:var(--ink)}
+.meter .fill.o{background:var(--signal)}
+.meter .ticks{display:grid;grid-template-columns:150px 1fr 110px;gap:calc(var(--u)*2)}
+.meter .ticks div{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.06em}
+
+/* KPI */
+.kpi{border-top:2px solid var(--ink);padding-top:calc(var(--u)*1.5);container-type:inline-size}
+.kpi .v{font-weight:900;letter-spacing:-.03em;line-height:1;font-size:clamp(36px,21cqi,80px);white-space:nowrap;margin-top:calc(var(--u)*1.5)}
+.kpi .u{display:inline-block;margin-top:var(--u);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;background:var(--ink);color:var(--white);padding:3px 6px}
+.kpi .l{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.kpi .d{font-size:13px;margin-top:var(--u)}
+
+/* simulator */
+.sim{border:2px solid var(--ink)}
+.sim .top{background:var(--ink);color:var(--white);display:flex;justify-content:space-between;gap:var(--u);padding:12px 16px;flex-wrap:wrap}
+.sim .top .code{color:var(--white)}
+.sim .ctrl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:2px solid var(--ink)}
+.sim .ctrl>div{padding:calc(var(--u)*2.5);border-right:1px solid var(--ink);min-width:0}
+.sim .ctrl>div:last-child{border-right:0}
+.seg{display:flex;border:2px solid var(--ink);margin-top:var(--u)}
+.seg button{flex:1;border:0;background:var(--white);color:var(--ink);font:700 12px/1 var(--mono);letter-spacing:.06em;padding:12px 8px;cursor:pointer;text-transform:uppercase}
+.seg button+button{border-left:2px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--white)}
+.seg button:hover:not([aria-pressed="true"]){background:var(--grid)}
+.range{display:flex;align-items:center;gap:calc(var(--u)*2);margin-top:var(--u)}
+.range output{font-weight:900;font-size:32px;letter-spacing:-.04em;min-width:72px;font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:24px;background:transparent;min-width:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--ink)}
+input[type=range]::-moz-range-track{height:4px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:28px;background:var(--signal);border:2px solid var(--ink);margin-top:-12px;border-radius:0}
+input[type=range]::-moz-range-thumb{width:16px;height:26px;background:var(--signal);border:2px solid var(--ink);border-radius:0}
+.sim .out{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.sim .out>div{padding:calc(var(--u)*3) calc(var(--u)*2.5);border-right:1px solid var(--ink);min-width:0;container-type:inline-size}
+.sim .out>div:last-child{border-right:0}
+.sim .out .v{font-weight:900;font-size:clamp(28px,22cqi,60px);letter-spacing:-.03em;line-height:1;margin-top:var(--u);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sim .out .v.o{color:var(--ink);background:var(--signal);display:inline-block;padding:2px 6px}
+.sim .chart{border-top:2px solid var(--ink);padding:calc(var(--u)*3) calc(var(--u)*2.5)}
+.sim .note{border-top:1px solid var(--ink);padding:12px 16px;font-size:12px;font-family:var(--mono);letter-spacing:.02em}
+.vbar{display:grid;grid-template-columns:150px 1fr 80px;gap:calc(var(--u)*2);align-items:center;margin-bottom:12px}
+.vbar .n{font-weight:700;font-size:14px}
+.vbar .t{position:relative;height:28px;background:var(--grid)}
+.vbar .t .f{position:absolute;inset:0 auto 0 0;background:var(--ink);transition:width .25s}
+.vbar .t .f.o{background:var(--signal)}
+.vbar .t .base{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink)}
+.vbar .t .base::after{content:"AR = 1,00";position:absolute;top:-16px;left:4px;font:700 10px var(--mono);white-space:nowrap}
+.vbar .v{font:700 13px var(--mono);text-align:right}
+@media (prefers-reduced-motion:reduce){.vbar .t .f{transition:none}}
+
+/* sources */
+.src{list-style:none;margin:0;padding:0;columns:2;column-gap:calc(var(--u)*6)}
+.src li{break-inside:avoid;padding:10px 0;border-top:1px solid var(--grid);font-size:13px;line-height:1.4}
+.src li span{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;display:block;margin-bottom:2px}
+.src a{text-decoration:none;border-bottom:1px solid var(--signal)}
+.src a:hover{background:var(--signal)}
+
+/* footer */
+footer{padding-block:calc(var(--u)*8) calc(var(--u)*6)}
+.sig{font-weight:900;letter-spacing:-.035em;line-height:.95;font-size:clamp(34px,6.5vw,84px);margin:0;overflow-wrap:anywhere}
+.sig a{text-decoration:none}
+.sig a:hover{background:var(--signal)}
+.foot-meta{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+
+/* spans */
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s7{grid-column:span 7}.s6{grid-column:span 6}.s5{grid-column:span 5}.s4{grid-column:span 4}.s3{grid-column:span 3}
+.o1{grid-column:2 / span 10}.st7{grid-column:7 / span 6}.st8{grid-column:8 / span 5}.st9{grid-column:9 / span 4}
+.right{text-align:right}
+
+@media (max-width:900px){
+  .s8,.s7,.s6,.s5,.o1,.st7,.st8{grid-column:span 12}
+  .s4,.s3,.st9{grid-column:span 6}
+  .stack,.g12>.s4.callout{grid-column:span 12}
+  .shead{row-gap:var(--u)}
+  .shead .s6{order:3;grid-column:span 12}
+  .shead .s3.right{text-align:right}
+  .g12>.s4.callout+.s4.callout{margin-top:calc(var(--u)*2)}
+  .sim .ctrl{grid-template-columns:1fr}
+  .sim .ctrl>div{border-right:0;border-bottom:1px solid var(--ink)}
+  .sim .ctrl>div:last-child{border-bottom:0}
+  .sim .out{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sim .out>div:nth-child(2){border-right:0}
+  .sim .out>div:nth-child(-n+2){border-bottom:1px solid var(--ink)}
+  .src{columns:1}
+  .right{text-align:left}
+}
+@media (max-width:560px){
+  .s4,.s3,.st9{grid-column:span 12}
+  .bar{grid-template-columns:1fr}
+  .bar .lab{display:none}
+  .meter .m,.meter .ticks,.vbar{grid-template-columns:96px 1fr 72px;gap:var(--u)}
+  .meter .m .n,.vbar .n{font-size:12px}
+  .list li{grid-template-columns:40px 1fr}
+  .guides i{grid-template-columns:repeat(4,1fr)}
+  .guides i b:nth-child(n+5){display:none}
+  .frame{padding:calc(var(--u)*5) calc(var(--u)*2)}
+  .lede{font-size:14px}
+  section{padding-block:calc(var(--u)*7) calc(var(--u)*3)}
+  .shead{margin-bottom:calc(var(--u)*4)}
+  th,td{padding:10px 8px;font-size:13px}
+  .eq{padding:calc(var(--u)*3) calc(var(--u)*2)}
+  .eq mjx-container{font-size:112%!important}
+  .eq.big mjx-container{font-size:140%!important}
+  .nav .id{font-size:11px}
+  .callout{padding:calc(var(--u)*2.5) calc(var(--u)*2)}
+  .sim .out>div{padding:calc(var(--u)*2.5) calc(var(--u)*2)}
+  .defs{grid-template-columns:1fr;gap:4px}
+  .defs dd{margin-bottom:var(--u)}
+}
+</style>
+
+<nav class="nav" aria-label="Índice">
+  <div class="wrap">
+    <div class="id"><span>PRG 01</span>RIGI·PTF</div>
+    <ol id="navlist">
+      <li><a href="#s01"><b>01</b>Marco teórico</a></li>
+      <li><a href="#s02"><b>02</b>Mercado de trabajo</a></li>
+      <li><a href="#s03"><b>03</b>Datos y método</a></li>
+      <li><a href="#s04"><b>04</b>Intensidad</a></li>
+      <li><a href="#s05"><b>05</b>PTF</a></li>
+      <li><a href="#s06"><b>06</b>Sectores</a></li>
+      <li><a href="#s07"><b>07</b>Lectura</a></li>
+      <li><a href="#s08"><b>08</b>Advertencias</a></li>
+      <li><a href="#s09"><b>09</b>Fuentes</a></li>
+    </ol>
+  </div>
+</nav>
+
+<div class="page">
+<div class="guides" aria-hidden="true"><i><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i></div>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="lab">Spec</div>
+      <div class="band">Productividad proyectada del RIGI</div>
+      <div class="lab r num">REV 1.0</div>
+    </div>
+    <div class="cross" aria-hidden="true"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+    <div class="row spread"><span class="meta">Régimen</span><span class="meta">de Incentivo</span><span class="meta">para Grandes</span><span class="meta">Inversiones</span></div>
+    <div class="g12 row">
+      <div class="s6"><div class="meta">Modelo Cobb-Douglas<br>Estado · Activo</div></div>
+      <div class="s6 right"><div class="meta">Argentina<br><span class="num">34°36′S 58°22′W</span></div></div>
+    </div>
+    <div class="cross" aria-hidden="true"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+
+    <div class="frame">
+      <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+      <h1 class="mega"><span>PTF</span><span class="gap num">48</span><br><span>RIGI</span><span class="gap">Y=AK<sup style="font-size:.4em;vertical-align:.9em;letter-spacing:-.02em">α</sup></span></h1>
+    </div>
+    <p class="eyebrow" style="margin:0;text-transform:none;letter-spacing:.06em">PTF = Productividad Total de los Factores · 48 = proyectos analizados (27 aprobados + 21 en evaluación) · Y = A·K<sup>α</sup>·L<sup>1−α</sup></p>
+
+    <div class="cross" aria-hidden="true"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+    <div class="g12 row">
+      <p class="s6 small lede" style="margin:0;max-width:none">Análisis de la productividad total de los factores proyectada para los 48 proyectos del RIGI: 27 aprobados por resolución en el Boletín Oficial y 21 en evaluación. Se descompone el producto por trabajador en profundización del capital y residuo de Solow, se calibra con los proyectos que publicaron exportaciones y se compara contra el promedio de la economía argentina. El objetivo es medir qué tan productivo es, en sentido estricto, el empleo que el régimen promete.</p>
+      <div class="st9 right"><div class="meta" style="text-transform:uppercase;font-size:20px;letter-spacing:-.02em">Para análisis<br>económico · uso<br>profesional</div></div>
+    </div>
+    <div class="g12 row" style="align-items:center">
+      <div class="s4 stack"><div class="meta">Corte de datos:<br><span class="num">01–09.11.2026</span></div></div>
+      <div class="s4 stack" style="container-type:inline-size"><div class="r1 num">USD 209.395 M</div></div>
+      <div class="s4 stack right"><span class="tag">Clasificación: Pública</span></div>
+    </div>
+    <div class="cross" aria-hidden="true"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+    <div class="bar">
+      <div class="lab">Doc</div>
+      <div class="band">Capital, trabajo y el residuo que queda</div>
+      <div class="lab r num">AR-48</div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= 01 TEORÍA ================= -->
+<section id="s01">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-01</span></div>
+      <div class="s6"><span class="eyebrow">Marco teórico · Función de producción</span></div>
+      <div class="s3 right"><span class="code">REF 1928 / 1957</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Cobb-Douglas: producir con capital y trabajo</h2>
+      <div class="s4"></div>
+
+      <div class="callout ink s12" data-k="LECTURA NO TÉCNICA · QUÉ ES LA PTF" style="margin-top:calc(var(--u)*5)">
+        <h3 class="h3">La PTF explicada con dos panaderías</h3>
+        <p class="body" style="margin-top:calc(var(--u)*1.5);font-size:16px;max-width:75ch">Imaginá dos panaderías con el mismo horno y la misma cantidad de panaderos. Si una saca 30% más pan por día, esa diferencia no viene de tener más máquinas ni más gente. Viene de una mejor receta, un turno mejor organizado o una harina de mejor calidad. Ese plus, lo que se produce de más con los mismos recursos, es la <strong>Productividad Total de los Factores</strong>.</p>
+      </div>
+      <div class="s6 callout" data-k="CLAVE 1" style="margin-top:calc(var(--u)*2)"><h3 class="h3" style="font-size:20px">Más producto por trabajador no es más productividad</h3><p class="small" style="margin:8px 0 0">Una panadería con diez hornos por empleado produce mucho más por persona, pero eso lo explican los hornos. La PTF descuenta el efecto de las máquinas y mide sólo lo que queda. Los proyectos del RIGI tienen entre 6 y 13 veces más capital por puesto que el promedio del país: por eso su producto por trabajador parece altísimo.</p></div>
+      <div class="s6 callout" data-k="CLAVE 2" style="margin-top:calc(var(--u)*2)"><h3 class="h3" style="font-size:20px">Cómo leer un valor como 1,29×</h3><p class="small" style="margin:8px 0 0">Todo se compara contra el promedio de la economía argentina, que vale 1,00. Un 1,29× significa que, con la misma dotación de capital y de trabajo, el proyecto produciría 29% más que la economía promedio. Un valor menor a 1,00 indicaría que usa sus recursos peor que el promedio.</p></div>
+      <div class="s6 callout" data-k="CLAVE 3" style="margin-top:calc(var(--u)*2)"><h3 class="h3" style="font-size:20px">El yacimiento funciona como harina regalada</h3><p class="small" style="margin:8px 0 0">En minería y petróleo, parte del plus viene de la calidad del recurso natural y de los precios internacionales, no de mejor tecnología. Vaca Muerta es una “harina” excepcional. Por eso la PTF de estos proyectos se lee como un techo, no como un piso.</p></div>
+      <div class="s6 callout" data-k="CLAVE 4" style="margin-top:calc(var(--u)*2)"><h3 class="h3" style="font-size:20px">Por qué importa para el empleo</h3><p class="small" style="margin:8px 0 0">Si la ventaja de un proyecto es sobre todo capital, crea pocos puestos por dólar, bien pagos y concentrados en un enclave. Si la ventaja es eficiencia transferible (proveedores locales, capacitación, tecnología), puede contagiar productividad y salarios al resto del mercado de trabajo.</p></div>
+      <p class="small s12" style="margin-top:calc(var(--u)*2);max-width:90ch">La letra griega <strong>α (alfa)</strong> que aparece en las fórmulas indica qué parte del producto se lleva el capital. En industrias muy mecanizadas como la minería ronda 0,7: de cada 100 pesos producidos, unos 70 remuneran al capital y 30 al trabajo.</p>
+
+      <div class="s5" style="margin-top:calc(var(--u)*5)">
+        <p class="body">En 1928 el matemático Charles Cobb y el economista Paul Douglas ajustaron una función de producción a la manufactura estadounidense de 1899 a 1922. Encontraron que el trabajo explicaba cerca de tres cuartos del producto y el capital un cuarto, y que esas proporciones eran notablemente estables en el tiempo.</p>
+        <p class="body">La forma funcional que propusieron se volvió la herramienta estándar de la teoría del crecimiento. Robert Solow (1957) la usó para mostrar que la mayor parte del crecimiento del producto por hora en EE.UU. no se explicaba por más capital, sino por un residuo: la <strong>productividad total de los factores</strong> (PTF).</p>
+        <p class="body">Su atractivo es la parsimonia: con dos factores y un parámetro separa cuánto producto viene de <strong>acumular</strong> (más máquinas por trabajador) y cuánto de <strong>usar mejor</strong> lo que hay (tecnología, organización, escala, calidad del recurso).</p>
+      </div>
+      <div class="st7" style="margin-top:calc(var(--u)*5);display:grid;gap:calc(var(--u)*3)">
+        <div class="eq big"><span class="eqk">EQ-01</span>
+          \[ Y = A\,K^{\alpha}\,L^{1-\alpha}, \qquad 0<\alpha<1 \]
+          <p>Función de producción con rendimientos constantes a escala: duplicar K y L duplica Y.</p>
+        </div>
+        <dl class="defs">
+          <dt>Y</dt><dd>Producto (valor agregado o, aquí, exportaciones/ventas anuales en régimen pleno), USD.</dd>
+          <dt>K</dt><dd>Stock de capital: inversión comprometida del proyecto, USD.</dd>
+          <dt>L</dt><dd>Trabajo: empleos directos e indirectos declarados.</dd>
+          <dt>A</dt><dd>Productividad total de los factores. Todo lo que eleva el producto sin más insumos.</dd>
+          <dt>α</dt><dd>Elasticidad del producto respecto del capital. Con mercados competitivos, es la participación del capital en el ingreso.</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="cross" aria-hidden="true" style="margin-top:calc(var(--u)*6)"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+
+    <div class="g12" style="margin-top:calc(var(--u)*3)">
+      <div class="s4">
+        <div class="eq"><span class="eqk">EQ-02</span>
+          \[ y = A\,k^{\alpha}, \quad y\equiv\tfrac{Y}{L},\; k\equiv\tfrac{K}{L} \]
+          <p>Forma intensiva. El producto por trabajador depende del capital por trabajador y de A.</p>
+        </div>
+      </div>
+      <div class="s4">
+        <div class="eq"><span class="eqk">EQ-03</span>
+          \[ A = \frac{Y}{K^{\alpha}L^{1-\alpha}} = \frac{y}{k^{\alpha}} \]
+          <p>Residuo de Solow. Lo que el capital por trabajador no alcanza a explicar.</p>
+        </div>
+      </div>
+      <div class="s4">
+        <div class="eq"><span class="eqk">EQ-04</span>
+          \[ \frac{\partial Y}{\partial L} = (1-\alpha)\,\frac{Y}{L} \]
+          <p>Producto marginal del trabajo. Con competencia, techo teórico del salario real.</p>
+        </div>
+      </div>
+      <div class="s6">
+        <div class="eq"><span class="eqk">EQ-05</span>
+          \[ \frac{A_i}{A_{AR}} = \frac{y_i/y_{AR}}{\left(k_i/k_{AR}\right)^{\alpha}} \]
+          <p>PTF del grupo de proyectos <em>i</em> relativa a la economía argentina. Es la métrica central de este documento: neutraliza unidades y deja ver la eficiencia neta de capitalización.</p>
+        </div>
+      </div>
+      <div class="s6">
+        <div class="eq"><span class="eqk">EQ-06</span>
+          \[ \ln\frac{y_i}{y_{AR}} = \underbrace{\alpha\ln\frac{k_i}{k_{AR}}}_{\text{profundización}} + \underbrace{\ln\frac{A_i}{A_{AR}}}_{\text{PTF}} \]
+          <p>Descomposición contable: la brecha de productividad laboral se reparte entre más capital por puesto y mayor eficiencia.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 MERCADO DE TRABAJO ================= -->
+<section id="s02">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-02</span></div>
+      <div class="s6"><span class="eyebrow">Óptica de productividad · Empleo</span></div>
+      <div class="s3 right"><span class="code">EPH 2T-2026</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Por qué sirve para leer el empleo que promete el RIGI</h2>
+      <div class="s4"></div>
+      <p class="body s6" style="margin-top:calc(var(--u)*4)">El debate público sobre el RIGI suele reducirse a dos números: dólares comprometidos y puestos de trabajo. Cobb-Douglas los pone en la misma ecuación y obliga a preguntar qué calidad de empleo genera cada dólar. Eso importa en un mercado laboral con 7,9% de desocupación y 6,1 millones de ocupados informales sobre 13,6 millones en los aglomerados urbanos (INDEC, 2T-2026).</p>
+      <div class="s6"></div>
+      <ol class="list s12" style="margin-top:calc(var(--u)*4)">
+        <li><span class="k">R-01</span><div><h4>Separa acumulación de eficiencia</h4><p>Un producto por trabajador cinco veces mayor puede deberse a una tecnología superior o, simplemente, a diez veces más capital por puesto. EQ-06 distingue ambas cosas. Para la política laboral la diferencia es decisiva: la profundización del capital no se derrama sola al resto de la economía; la PTF, a veces sí.</p></div></li>
+        <li><span class="k">R-02</span><div><h4>Conecta productividad con salarios</h4><p>EQ-04 da un techo teórico para la remuneración por puesto. Proyectos con alto Y/L pueden pagar salarios muy por encima del promedio, lo que explica la presión salarial local en Vaca Muerta o San Juan y el riesgo de "enfermedad holandesa" regional sobre sectores transables vecinos.</p></div></li>
+        <li><span class="k">R-03</span><div><h4>Mide el costo de oportunidad del empleo</h4><p>La relación K/L es la inversa del empleo por dólar. Con K/L de USD 1,14 M por puesto en los proyectos en evaluación, cada millón crea menos de un empleo. Es el dato que permite comparar el régimen contra instrumentos alternativos de creación de trabajo.</p></div></li>
+        <li><span class="k">R-04</span><div><h4>Hace visible la estructura productiva desequilibrada</h4><p>Marcelo Diamand describió una economía con un sector primario de productividad muy superior al industrial. Comparar la PTF del RIGI contra el promedio nacional cuantifica esa brecha dual y anticipa si el régimen la profundiza (enclave) o la reduce (encadenamientos con proveedores locales).</p></div></li>
+        <li><span class="k">R-05</span><div><h4>Ordena la heterogeneidad sectorial</h4><p>Un puerto, una acería y un upstream de shale tienen funciones de producción muy distintas. Calcular A por sector muestra dónde el régimen compra eficiencia y dónde sólo compra capital.</p></div></li>
+      </ol>
+      <div class="callout s12" data-k="LÍMITE DEL INSTRUMENTO" style="margin-top:calc(var(--u)*5)">
+        <p class="body" style="max-width:none">Con dos factores, la renta del recurso natural (la geología de Vaca Muerta, la ley del mineral de cobre en San Juan) queda adentro de A. En industrias extractivas, buena parte del "residuo" es renta ricardiana y precio internacional proyectado, no tecnología. La extensión correcta es <span class="num">Y = A·K<sup>α</sup>·L<sup>β</sup>·R<sup>γ</sup></span>; aquí se trata como sesgo conocido hacia arriba.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 03 DATOS ================= -->
+<section id="s03">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-03</span></div>
+      <div class="s6"><span class="eyebrow">Insumos · Calibración · Escenarios</span></div>
+      <div class="s3 right"><span class="code">FEED: SINCRONIZADO</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Datos y método</h2>
+      <div class="s4"></div>
+
+      <div class="s4 kpi stack" style="margin-top:calc(var(--u)*4)"><div class="l">Aprobados · 27 proyectos</div><div class="v num">76.174</div><span class="u">USD M</span><div class="d num">133.076 empleos directos e indirectos</div></div>
+      <div class="s4 kpi stack" style="margin-top:calc(var(--u)*4)"><div class="l">En evaluación · 21 proyectos</div><div class="v num">133.221</div><span class="u">USD M</span><div class="d num">116.840 empleos · 86% petróleo y gas</div></div>
+      <div class="s4 kpi stack" style="margin-top:calc(var(--u)*4)"><div class="l">Benchmark · Economía AR</div><div class="v num">668.000</div><span class="u">USD M</span><div class="d num">PBI 2026 (FMI) · ≈21,0 M ocupados</div></div>
+
+      <div class="s6" style="margin-top:calc(var(--u)*6)">
+        <h3 class="h3">Producto (Y)</h3>
+        <p class="body" style="margin-top:var(--u)">No hay valor agregado público por proyecto. Se usan exportaciones o ventas anuales en régimen pleno, con un ratio Y/K por sector calibrado sobre los proyectos que publicaron su dato.</p>
+        <div class="tbl" style="margin-top:calc(var(--u)*2)">
+          <table>
+            <thead><tr><th>Sector</th><th>Proyectos de calibración</th><th>Y/K</th></tr></thead>
+            <tbody>
+              <tr><td><b>Petróleo y gas</b></td><td>Bajo del Choique, TGS ×2, MEGA, Fertilizantes</td><td><b>0,237</b></td></tr>
+              <tr><td><b>Minería</b></td><td>Vicuña, LIEX, Sal de Oro II, Hombre Muerto</td><td><b>0,310</b></td></tr>
+              <tr><td>Energía eléctrica</td><td>Supuesto (renovables, mercado interno)</td><td>0,12</td></tr>
+              <tr><td>Siderurgia</td><td>Sidersa: 360 kt × precio de largos</td><td>1,00</td></tr>
+              <tr><td>Puerto / Tecnología</td><td>Supuesto tarifario / supuesto</td><td>0,15 / 0,30</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="s6" style="margin-top:calc(var(--u)*6)">
+        <h3 class="h3">Escenarios y supuestos</h3>
+        <ol class="list" style="margin-top:calc(var(--u)*2)">
+          <li><span class="k">ESC-A</span><div><h4>Conservador</h4><p>Excluye el caudal de los ductos (VMOS, San Matías): ese crudo y gas ya está contado en los proyectos de extracción.</p></div></li>
+          <li><span class="k">ESC-B</span><div><h4>Bruto</h4><p>Suma los caudales anunciados (USD 16.600 M VMOS + 2.500 M San Matías) y valúa Argentina LNG a su FOB declarado de USD 30.000 M anuales.</p></div></li>
+          <li><span class="k">K-AR</span><div><h4>Capital nacional</h4><p>K/Y = 2,8 para la economía argentina. Es un supuesto propio: afecta niveles, no el ranking entre grupos.</p></div></li>
+          <li><span class="k">L-OP</span><div><h4>Empleo operativo</h4><p>El empleo directo en operación es ≈9% del total declarado (Observatorio citado por Chequeado). Se usa como sensibilidad.</p></div></li>
+        </ol>
+      </div>
+      <p class="small s12" style="margin-top:calc(var(--u)*3);max-width:90ch">Composición sectorial de los aprobados tomada del plan de inversión anual del portal oficial (USD 84.867 M, incluye aprobaciones posteriores al corte): petróleo, gas y fertilizantes 65,1%; minería 31,9%; tecnología 1,6%; energía eléctrica 0,8%; siderurgia 0,3%; puerto 0,3%. El 62% del capex se desembolsa hasta 2030 y el resto se estira hasta 2056.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 INTENSIDAD ================= -->
+<section id="s04">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-04</span></div>
+      <div class="s6"><span class="eyebrow">Intensidad de factores · Escenario A</span></div>
+      <div class="s3 right"><span class="code">UNIT: USD / EMPLEO</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Muchísimo capital por puesto</h2>
+      <div class="s4"></div>
+
+      <div class="s12" style="margin-top:calc(var(--u)*5)">
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Grupo</th><th>Y (USD M)</th><th>K (USD M)</th><th>L</th><th>Y/L (USD)</th><th>K/L (USD)</th><th>Y/K · A</th><th>Y/K · B</th></tr></thead>
+            <tbody>
+              <tr><td><b>Aprobados</b></td><td>20.025</td><td>76.174</td><td>133.076</td><td>150.479</td><td>572.410</td><td>0,263</td><td>0,514</td></tr>
+              <tr><td><b>En evaluación</b></td><td>32.082</td><td>133.221</td><td>116.840</td><td>274.579</td><td>1.140.200</td><td>0,241</td><td>0,375</td></tr>
+              <tr class="ref"><td>Economía argentina</td><td>668.000</td><td>1.870.400</td><td>21.008.704</td><td>31.796</td><td>89.030</td><td>0,357</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="s6" style="margin-top:calc(var(--u)*6)">
+        <div class="eyebrow" style="margin-bottom:calc(var(--u)*2)">FIG-01 · Capital por trabajador (K/L)</div>
+        <div class="meter">
+          <div class="m"><span class="n">En evaluación</span><div class="track"><div class="fill o" style="width:100%"></div></div><span class="v">1.140.200</span></div>
+          <div class="m"><span class="n">Aprobados</span><div class="track"><div class="fill" style="width:50.2%"></div></div><span class="v">572.410</span></div>
+          <div class="m"><span class="n">Economía AR</span><div class="track"><div class="fill" style="width:7.8%"></div></div><span class="v">89.030</span></div>
+          <div class="ticks"><span></span><div><span>0</span><span>400k</span><span>800k</span><span>1,14M</span></div><span></span></div>
+        </div>
+      </div>
+      <div class="s6" style="margin-top:calc(var(--u)*6)">
+        <div class="eyebrow" style="margin-bottom:calc(var(--u)*2)">FIG-02 · Producto por cada dólar de capital (Y/K, ESC-A)</div>
+        <div class="meter">
+          <div class="m"><span class="n">Economía AR</span><div class="track"><div class="fill" style="width:89.3%"></div></div><span class="v">0,357</span></div>
+          <div class="m"><span class="n">Aprobados</span><div class="track"><div class="fill" style="width:65.8%"></div></div><span class="v">0,263</span></div>
+          <div class="m"><span class="n">En evaluación</span><div class="track"><div class="fill o" style="width:60.3%"></div></div><span class="v">0,241</span></div>
+          <div class="ticks"><span></span><div><span>0</span><span>0,10</span><span>0,20</span><span>0,30</span><span>0,40</span></div><span></span></div>
+        </div>
+      </div>
+
+      <div class="callout ink s12" data-k="LECTURA S-04" style="margin-top:calc(var(--u)*6)">
+        <p class="body" style="max-width:none;font-size:17px;font-weight:600">Los aprobados tienen <strong>6,4×</strong> el capital por trabajador del promedio nacional y los en evaluación <strong>12,8×</strong>. Por eso cada puesto produce entre 5 y 9 veces más. Pero en el escenario conservador cada dólar invertido rinde <strong>menos</strong> que el promedio de la economía (0,24–0,26 contra 0,36). Es profundización del capital con rendimientos decrecientes, no un salto tecnológico.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 05 PTF ================= -->
+<section id="s05">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-05</span></div>
+      <div class="s6"><span class="eyebrow">Productividad total de los factores · EQ-05</span></div>
+      <div class="s3 right"><span class="code">BASE: AR = 1,00</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Residuo de Solow relativo</h2>
+      <div class="s4"></div>
+
+      <div class="s12" style="margin-top:calc(var(--u)*5)">
+        <div class="sim" id="sim">
+          <div class="top"><span class="code">SIM-01 · SIMULADOR DE PTF RELATIVA</span><span class="code" id="simState">α 0,70 · ESC-A · L TITULAR</span></div>
+          <div class="ctrl">
+            <div>
+              <label class="eyebrow" for="alpha">Participación del capital <span style="text-transform:none">α</span></label>
+              <div class="range"><input type="range" id="alpha" min="0.3" max="0.8" step="0.05" value="0.7"><output id="alphaOut" for="alpha">0,70</output></div>
+            </div>
+            <div>
+              <span class="eyebrow" id="escLab">Escenario de producto</span>
+              <div class="seg" role="group" aria-labelledby="escLab">
+                <button type="button" id="escA" aria-pressed="true" data-esc="A">A · Conservador</button>
+                <button type="button" id="escB" aria-pressed="false" data-esc="B">B · Bruto</button>
+              </div>
+            </div>
+            <div>
+              <span class="eyebrow" id="labLab">Base de empleo</span>
+              <div class="seg" role="group" aria-labelledby="labLab">
+                <button type="button" id="labT" aria-pressed="true" data-lab="1">Titular</button>
+                <button type="button" id="labO" aria-pressed="false" data-lab="0.09">Operativo ≈9%</button>
+              </div>
+            </div>
+          </div>
+          <div class="out">
+            <div><div class="eyebrow">PTF aprobados</div><div class="v num" id="oAp">1,29×</div></div>
+            <div><div class="eyebrow">PTF evaluación</div><div class="v num" id="oEv">1,45×</div></div>
+            <div><div class="eyebrow">Evaluación / aprobados</div><div class="v o num" id="oRat">+13%</div></div>
+            <div><div class="eyebrow">PMgL por puesto · eval.</div><div class="v num" id="oW">82k</div><div class="small" style="margin-top:4px">EQ-04, USD/año. Aprob.: <span class="num" id="oWa">45k</span></div></div>
+          </div>
+          <div class="chart" aria-live="polite">
+            <div class="vbar"><span class="n">Aprobados</span><div class="t"><div class="f" id="bAp"></div><div class="base" id="base1"></div></div><span class="v" id="vAp"></span></div>
+            <div class="vbar"><span class="n">En evaluación</span><div class="t"><div class="f o" id="bEv"></div><div class="base" id="base2" style="visibility:hidden"></div></div><span class="v" id="vEv"></span></div>
+          </div>
+          <div class="note">El cociente evaluación/aprobados no depende de la base de empleo: el ajuste operativo escala ambos grupos por igual. Sí depende de α y del escenario.</div>
+        </div>
+      </div>
+
+      <div class="s12" style="margin-top:calc(var(--u)*6)">
+        <div class="eyebrow" style="margin-bottom:calc(var(--u)*2)">TAB-02 · Matriz de sensibilidad · L titular</div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>α</th><th>Aprobados · A</th><th>Evaluación · A</th><th>Eval./Aprob. · A</th><th>Aprobados · B</th><th>Evaluación · B</th><th>Eval./Aprob. · B</th></tr></thead>
+            <tbody>
+              <tr><td>0,35</td><td>2,47</td><td>3,54</td><td>1,43</td><td>4,82</td><td>5,51</td><td>1,14</td></tr>
+              <tr><td>0,50</td><td>1,87</td><td>2,41</td><td>1,29</td><td>3,65</td><td>3,76</td><td>1,03</td></tr>
+              <tr class="hl"><td>0,70 · referencia extractiva</td><td>1,29</td><td>1,45</td><td>1,13</td><td>2,51</td><td>2,26</td><td>0,90</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small" style="margin-top:calc(var(--u)*1.5);max-width:90ch">Con empleo operativo directo (≈9% del titular), los niveles se multiplican por 2 a 5 según α (α = 0,7: 2,65 y 2,98 en ESC-A). El cociente entre grupos no cambia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 06 SECTORES ================= -->
+<section id="s06">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-06</span></div>
+      <div class="s6"><span class="eyebrow">Aprobados por sector · ESC-A · α = 0,50</span></div>
+      <div class="s3 right"><span class="code">5 SECTORES</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Dónde el régimen compra eficiencia</h2>
+      <div class="s4"></div>
+      <div class="s7" style="margin-top:calc(var(--u)*5)">
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Sector</th><th>K (USD M)</th><th>L</th><th>K/L</th><th>Y/L</th><th>PTF rel.</th></tr></thead>
+            <tbody>
+              <tr><td><b>Petróleo, gas y electricidad</b></td><td>50.184</td><td>38.592</td><td>1.300k</td><td>307k</td><td><b>2,52</b></td></tr>
+              <tr><td><b>Siderurgia</b></td><td>257</td><td>3.800</td><td>68k</td><td>68k</td><td><b>2,44</b></td></tr>
+              <tr><td><b>Minería</b></td><td>24.279</td><td>64.097</td><td>379k</td><td>118k</td><td><b>1,79</b></td></tr>
+              <tr><td><b>Tecnología</b></td><td>1.205</td><td>6.027</td><td>200k</td><td>60k</td><td><b>1,26</b></td></tr>
+              <tr><td><b>Puerto (Timbúes)</b></td><td>249</td><td>9.700</td><td>26k</td><td>4k</td><td><b>0,23</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="st8" style="margin-top:calc(var(--u)*5)">
+        <div class="eyebrow" style="margin-bottom:calc(var(--u)*2)">FIG-03 · PTF relativa (AR = 1,00)</div>
+        <div class="meter">
+          <div class="m"><span class="n">O&amp;G + elec.</span><div class="track"><div class="fill o" style="width:84%"></div></div><span class="v">2,52</span></div>
+          <div class="m"><span class="n">Siderurgia</span><div class="track"><div class="fill" style="width:81.3%"></div></div><span class="v">2,44</span></div>
+          <div class="m"><span class="n">Minería</span><div class="track"><div class="fill" style="width:59.7%"></div></div><span class="v">1,79</span></div>
+          <div class="m"><span class="n">Tecnología</span><div class="track"><div class="fill" style="width:42%"></div></div><span class="v">1,26</span></div>
+          <div class="m"><span class="n">Puerto</span><div class="track"><div class="fill" style="width:7.7%"></div></div><span class="v">0,23</span></div>
+          <div class="ticks"><span></span><div><span>0</span><span>1,0</span><span>2,0</span><span>3,0</span></div><span></span></div>
+        </div>
+      </div>
+      <p class="small s12" style="margin-top:calc(var(--u)*3);max-width:90ch">Siderurgia aparece inflada porque su Y son ventas brutas, no valor agregado. El puerto queda bajo porque su producto es sólo la tarifa y casi todo su empleo es de construcción. El empleo sectorial se imputa con las intensidades de Paspartú (35 empleos por millón en infraestructura, 13 en siderurgia, 5 en tecnología, ≈3 en minería, ≈1 en petróleo, gas y energía).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 07 LECTURA ================= -->
+<section id="s07">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-07</span></div>
+      <div class="s6"><span class="eyebrow">Conclusiones</span></div>
+      <div class="s3 right"><span class="code">4 HALLAZGOS</span></div>
+    </div>
+    <div class="g12">
+      <h2 class="h2 s8">Alta capitalización, productividad moderada</h2>
+      <div class="s4"></div>
+      <ol class="list s12" style="margin-top:calc(var(--u)*5)">
+        <li><span class="k">C-01</span><div><h4>Robusto: ambos grupos superan al promedio argentino</h4><p>Con cualquier α y en ambos escenarios, la PTF proyectada de aprobados y en evaluación es mayor que la de la economía en su conjunto.</p></div></li>
+        <li><span class="k">C-02</span><div><h4>Con α realista, el plus es acotado</h4><p>En minería y petróleo la participación del capital ronda 0,7–0,8. Con α = 0,7 la ventaja sobre la economía es 1,3× en aprobados y 1,45× en evaluación. Muy lejos del 5–9× que sugiere el producto por trabajador.</p></div></li>
+        <li><span class="k">C-03</span><div><h4>La ventaja de lo que está en evaluación es frágil</h4><p>Oscila entre +43% y −10% según α y según cómo se cuente Argentina LNG, que concentra cerca del 38% del capital en evaluación. Lo seguro es que esa cartera es el doble de intensiva en capital y crea 0,9 empleos por millón contra 1,75 de los aprobados.</p></div></li>
+        <li><span class="k">C-04</span><div><h4>Parte del residuo es renta, no tecnología</h4><p>Al omitir el recurso natural, la renta geológica y los precios de commodities proyectados se registran como PTF. El efecto de derrame sobre el mercado de trabajo depende de encadenamientos con proveedores, no del residuo medido.</p></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 08 ADVERTENCIAS ================= -->
+<section id="s08">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-08</span></div>
+      <div class="s6"><span class="eyebrow">Advertencias metodológicas</span></div>
+      <div class="s3 right"><span class="code">NIVEL DE CONFIANZA: MEDIO</span></div>
+    </div>
+    <div class="g12">
+      <div class="s4 callout" data-k="W-01"><h3 class="h3" style="font-size:20px">Producto sobreestimado</h3><p class="small" style="margin:8px 0 0">Exportaciones brutas en vez de valor agregado. En minería el VA suele ser 50–60% del valor bruto de producción.</p></div>
+      <div class="s4 callout" data-k="W-02"><h3 class="h3" style="font-size:20px">Desfase temporal</h3><p class="small" style="margin:8px 0 0">El empleo declarado es mayormente de construcción; el producto es de operación plena, años después.</p></div>
+      <div class="s4 callout" data-k="W-03"><h3 class="h3" style="font-size:20px">Capex diferido</h3><p class="small" style="margin:8px 0 0">Sólo el 62% del capex aprobado se invierte hasta 2030. Bajo del Choique sigue invirtiendo hasta 2056.</p></div>
+      <div class="s6 callout" data-k="W-04" style="margin-top:calc(var(--u)*2)"><h3 class="h3" style="font-size:20px">Opacidad de la cartera en evaluación</h3><p class="small" style="margin:8px 0 0">No hay datos públicos proyecto por proyecto: se aplican los ratios sectoriales calibrados con los aprobados.</p></div>
+      <div class="s6 callout" data-k="W-05" style="margin-top:calc(var(--u)*2)"><h3 class="h3" style="font-size:20px">Stock de capital supuesto</h3><p class="small" style="margin:8px 0 0">Con K/Y entre 2,5 y 3,2 cambian los niveles de PTF relativa, pero no el ordenamiento entre grupos.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 09 FUENTES ================= -->
+<section id="s09">
+  <div class="wrap">
+    <div class="g12 shead">
+      <div class="s3"><span class="code o">S-09</span></div>
+      <div class="s6"><span class="eyebrow">Fuentes</span></div>
+      <div class="s3 right"><span class="code">13 REFERENCIAS</span></div>
+    </div>
+    <ul class="src">
+      <li><span>OFICIAL</span><a href="https://www.argentina.gob.ar/economia/rigi" target="_blank" rel="noopener">Portal RIGI · Ministerio de Economía</a></li>
+      <li><span>PASPARTÚ / PERFIL</span><a href="https://www.perfil.com/economia/el-rigi-generaria-menos-de-dos-empleos-por-cada-millon-de-dolares-invertido-a40-ahrPv3V3jlt5" target="_blank" rel="noopener">Empleos por millón invertido: 27 aprobados, 21 en evaluación</a></li>
+      <li><span>PASPARTÚ / DOLARHOY</span><a href="https://dolarhoy.com/empresas/rigi-generaria-solo-dos-empleos-por-cada-millon-de-dolares-invertido-segun-informe-2026111212335" target="_blank" rel="noopener">Intensidad laboral sectorial; 86% O&amp;G en evaluación</a></li>
+      <li><span>EL CRONISTA</span><a href="https://www.cronista.com/economia-politica/el-mapa-de-las-inversiones-del-rigi-cuales-son-los-27-proyectos-que-ya-tienen-luz-verde/" target="_blank" rel="noopener">El mapa de los 27 aprobados y 21 en evaluación</a></li>
+      <li><span>INFOBAE / BCR</span><a href="https://www.infobae.com/economia/2026/11/13/el-gobierno-sumo-al-rigi-dos-megaproyectos-por-usd-3245-millones-para-potenciar-las-exportaciones-de-gas/" target="_blank" rel="noopener">TGS: USD 3.245 M y USD 1.100 M anuales de exportación</a></li>
+      <li><span>INFOBAE</span><a href="https://www.infobae.com/economia/2026/10/19/el-gobierno-aprobo-un-proyecto-rigi-de-mas-de-usd-12200-millones-para-producir-petroleo-y-gas-en-vaca-muerta/" target="_blank" rel="noopener">Bajo del Choique: USD 2.300 M anuales</a></li>
+      <li><span>MINUTOUNO</span><a href="https://www.minutouno.com/economia/el-gobierno-aprobo-cinco-nuevos-proyectos-del-rigi-mineria-gas-y-litio-n6306997" target="_blank" rel="noopener">Fertilizantes, MEGA, LIEX y Sal de Oro</a></li>
+      <li><span>RÍO NEGRO</span><a href="https://www.rionegro.com.ar/politica/el-gobierno-anuncio-cinco-nuevas-aprobaciones-del-rigi-y-proyecta-un-fuerte-impacto-en-exportaciones-y-empleo-4671134/?amp=1" target="_blank" rel="noopener">Vicuña: USD 2.600 M anuales y 31.700 empleos</a></li>
+      <li><span>DIARIO PANORAMA</span><a href="https://diariopanorama.com/noticia/550068/uno-uno-estos-son-proyectos-presentados-rigi-ya-suman-usd-95000-millones" target="_blank" rel="noopener">VMOS, Hombre Muerto Oeste y Sidersa</a></li>
+      <li><span>CHEQUEADO</span><a href="https://chequeado.com/nota/rigi-cuantos-proyectos-fueron-aprobados-cuanto-dinero-ingreso-y-que-dudas-persisten-sobre-el-costo-fiscal" target="_blank" rel="noopener">Empleo de construcción vs. operación</a></li>
+      <li><span>EL CRONISTA</span><a href="https://www.cronista.com/economia-politica/rigi-dos-anos-despues-mas-proyectos-y-una-brecha-entre-anuncios-y-dolares-efectivos/" target="_blank" rel="noopener">Argentina LNG: USD 30.000 M anuales</a></li>
+      <li><span>C5N / FMI</span><a href="https://www.c5n.com/economia/el-fmi-dio-conocer-el-ranking-global-pbi-que-puesto-ocupara-la-argentina-2026-n226351/amp" target="_blank" rel="noopener">PBI 2026: USD 668.000 M</a></li>
+      <li><span>INDEC / PERFIL</span><a href="https://www.perfil.com/noticias/amp/economia/gran-rosario-en-el-centro-del-mapa-laboral-tuvo-la-tasa-de-desempleo-mas-alta-del-pais-segundo-trimestre.phtml" target="_blank" rel="noopener">EPH 2T-2026: 13,57 M ocupados, 7,9% desocupación</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="cross" aria-hidden="true"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+    <div class="g12" style="padding-block:calc(var(--u)*4)">
+      <div class="s8">
+        <div class="eyebrow" style="margin-bottom:calc(var(--u)*2)">Autor · Firma</div>
+        <p class="sig">Nicolás Amábili</p>
+        <p class="sig" style="font-size:clamp(20px,3vw,36px);letter-spacing:-.03em;margin-top:calc(var(--u)*2)"><a href="https://amabili.space/" target="_blank" rel="noopener">https://amabili.space/</a></p>
+        <p class="sig" style="font-size:clamp(18px,2.2vw,26px);letter-spacing:-.02em;font-weight:700;margin-top:calc(var(--u)*1.5)">Consultor en <a href="https://www.centralpyme.com.ar/" target="_blank" rel="noopener" style="border-bottom:2px solid var(--signal)">https://www.centralpyme.com.ar/</a></p>
+      </div>
+      <div class="s4 right" style="align-self:end">
+        <div class="foot-meta">Doc RIGI-PTF · Rev 1.0<br><span class="num">25.11.2026</span> · Buenos Aires<br>Corte de datos <span class="num">09.11.2026</span></div>
+        <div style="margin-top:calc(var(--u)*2)"><span class="tag">Clasificación: Pública</span></div>
+      </div>
+    </div>
+    <div class="cross" aria-hidden="true"><span class="c1"></span><span class="c7"></span><span class="c13"></span></div>
+  </div>
+</footer>
+</div>
+
+<script>
+(function(){
+  // Inputs (USD M, empleos) · corte 01-09.11.2026
+  var D = {
+    ap:{K:76174, L:133076, Y:{A:20025, B:39125}},
+    ev:{K:133221, L:116840, Y:{A:32082, B:49983}},
+    ar:{K:1870400, L:21008704, Y:668000}
+  };
+  var st = {a:0.7, esc:'A', lab:1};
+  var yAR = D.ar.Y/D.ar.L, kAR = D.ar.K/D.ar.L;
+  function rel(g){
+    var L = D[g].L*st.lab, y = D[g].Y[st.esc]/L, k = D[g].K/L;
+    return (y/yAR)/Math.pow(k/kAR, st.a);
+  }
+  function wage(g){ return (1-st.a)*D[g].Y[st.esc]*1e6/(D[g].L*st.lab); }
+  function f2(x){ return x.toFixed(2).replace('.',','); }
+  function fk(x){ return x>=1e6 ? (x/1e6).toFixed(2).replace('.',',')+'M' : Math.round(x/1e3)+'k'; }
+  var $ = function(id){ return document.getElementById(id); };
+  function render(){
+    var ap = rel('ap'), ev = rel('ev'), r = ev/ap - 1;
+    $('alphaOut').textContent = f2(st.a);
+    $('oAp').textContent = f2(ap)+'×';
+    $('oEv').textContent = f2(ev)+'×';
+    $('oRat').textContent = (r>=0?'+':'−')+Math.abs(Math.round(r*100))+'%';
+    $('oW').textContent = fk(wage('ev'));
+    $('oWa').textContent = fk(wage('ap'));
+    $('simState').textContent = 'α '+f2(st.a)+' · ESC-'+st.esc+' · L '+(st.lab===1?'TITULAR':'OPERATIVO');
+    var mx = Math.max(ap, ev, 1)*1.1;
+    $('bAp').style.width = (ap/mx*100)+'%';
+    $('bEv').style.width = (ev/mx*100)+'%';
+    $('base1').style.left = (1/mx*100)+'%';
+    $('base2').style.left = (1/mx*100)+'%';
+    $('vAp').textContent = f2(ap)+'×';
+    $('vEv').textContent = f2(ev)+'×';
+  }
+  $('alpha').addEventListener('input', function(e){ st.a = parseFloat(e.target.value); render(); });
+  [['escA','escB','esc'],['labT','labO','lab']].forEach(function(p){
+    [p[0],p[1]].forEach(function(id){
+      $(id).addEventListener('click', function(){
+        $(p[0]).setAttribute('aria-pressed', id===p[0]);
+        $(p[1]).setAttribute('aria-pressed', id===p[1]);
+        st[p[2]] = p[2]==='esc' ? this.dataset.esc : parseFloat(this.dataset.lab);
+        render();
+      });
+    });
+  });
+  render();
+
+  // Active section in nav
+  var links = Array.prototype.slice.call(document.querySelectorAll('#navlist a'));
+  if ('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (e.isIntersecting){
+          links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href')==='#'+e.target.id); });
+        }
+      });
+    }, {rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('section[id]').forEach(function(s){ io.observe(s); });
+  }
+})();
+</script>
+
+</body></html>
