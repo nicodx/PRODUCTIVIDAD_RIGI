@@ -19,6 +19,7 @@
   --ink:#111111;
   --signal:#FF5A1F;
   --grid:#EAEAEA;
+  --grid-soft:#F2F2F2;
   --sans:"Geist","Helvetica Neue",Helvetica,Arial,sans-serif;
   --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --u:8px;
@@ -36,12 +37,15 @@ a{color:inherit}
 /* ---------- wrapper + column guides ---------- */
 .wrap{max-width:var(--maxw);margin:0 auto;position:relative;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.guides{position:absolute;inset:0;pointer-events:none;z-index:0;
-  margin:0 auto;max-width:var(--maxw);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.guides i{display:grid;grid-template-columns:repeat(12,1fr);height:100%;column-gap:calc(var(--u)*3)}
-.guides i b{border-left:1px solid var(--grid);border-right:1px solid var(--grid)}
-.page{position:relative}
+/* square technical grid, as in the reference poster: 1px lines, slightly fainter than --grid */
+.guides{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.6;
+  background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
+  background-size:120px 120px;background-position:center top}
+.guides i{display:none}
+.page{position:relative;background-color:var(--white);
+  background-image:linear-gradient(to right,var(--grid-soft) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-soft) 1px,transparent 1px);
+  background-size:120px 120px;background-position:center top}
+.guides{display:none!important}
 .g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:calc(var(--u)*3);row-gap:calc(var(--u)*3);position:relative;z-index:1}
 .g12>*{min-width:0}
 
@@ -243,9 +247,9 @@ footer{padding-block:calc(var(--u)*8) calc(var(--u)*6)}
   .meter .m,.meter .ticks,.vbar{grid-template-columns:96px 1fr 72px;gap:var(--u)}
   .meter .m .n,.vbar .n{font-size:12px}
   .list li{grid-template-columns:40px 1fr}
-  .guides i{grid-template-columns:repeat(4,1fr)}
-  .guides i b:nth-child(n+5){display:none}
+  .guides{background-size:80px 80px}
   .frame{padding:calc(var(--u)*5) calc(var(--u)*2)}
+  .page{background-size:96px 96px}
   .lede{font-size:14px}
   section{padding-block:calc(var(--u)*7) calc(var(--u)*3)}
   .shead{margin-bottom:calc(var(--u)*4)}
