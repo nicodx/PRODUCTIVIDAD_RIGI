@@ -35,17 +35,14 @@ a{color:inherit}
 :focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 
 /* ---------- wrapper + column guides ---------- */
-.wrap{max-width:var(--maxw);margin:0 auto;position:relative;
+.wrap{max-width:var(--maxw);margin:0 auto;position:relative;z-index:1;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-/* square technical grid, as in the reference poster: 1px lines, slightly fainter than --grid */
-.guides{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.6;
-  background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
-  background-size:120px 120px;background-position:center top}
-.guides i{display:none}
-.page{position:relative;background-color:var(--white);
+/* square technical grid, as in the reference poster: 1px lines, fixed to viewport with crisp pixel alignment */
+.guides{position:fixed;inset:0;width:100%;width:round(down,100%,2px);pointer-events:none;z-index:0;
   background-image:linear-gradient(to right,var(--grid-soft) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-soft) 1px,transparent 1px);
   background-size:120px 120px;background-position:center top}
-.guides{display:none!important}
+.guides i{display:none}
+.page{position:relative;background-color:var(--white)}
 .g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:calc(var(--u)*3);row-gap:calc(var(--u)*3);position:relative;z-index:1}
 .g12>*{min-width:0}
 
@@ -247,9 +244,8 @@ footer{padding-block:calc(var(--u)*8) calc(var(--u)*6)}
   .meter .m,.meter .ticks,.vbar{grid-template-columns:96px 1fr 72px;gap:var(--u)}
   .meter .m .n,.vbar .n{font-size:12px}
   .list li{grid-template-columns:40px 1fr}
-  .guides{background-size:80px 80px}
+  .guides{background-size:96px 96px}
   .frame{padding:calc(var(--u)*5) calc(var(--u)*2)}
-  .page{background-size:96px 96px}
   .lede{font-size:14px}
   section{padding-block:calc(var(--u)*7) calc(var(--u)*3)}
   .shead{margin-bottom:calc(var(--u)*4)}
